@@ -12,12 +12,15 @@ import torch.nn as nn
 SCALE = 0.18215
 
 
+VAE_REVISION = "f04b2c4b9831"  # registered contract revision — never float
+
+
 class FrozenVAE(nn.Module):
     def __init__(self, model_id="stabilityai/sd-vae-ft-ema", device="cuda",
                  use_checkpoint=True):
         super().__init__()
         from diffusers import AutoencoderKL
-        self.vae = AutoencoderKL.from_pretrained(model_id)
+        self.vae = AutoencoderKL.from_pretrained(model_id, revision=VAE_REVISION)
         self.vae.to(device).eval().requires_grad_(False)
         self.model_id = model_id
         if use_checkpoint:

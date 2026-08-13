@@ -11,8 +11,12 @@
 
 ## Arm convention (identical for every arm)
 Init from milestone EMA weights; optimizer RESET (fresh AdamW lr 1e-4 wd 0, no
-warmup); data-order seed = arm seed; global batch 256; perc_frac 0.5;
-milestones + resumable ckpt every 5k; eval on EMA weights.
+warmup); data-order seed = arm seed; global batch 256 as **micro-batch 16 x
+accum 16 — geometry is FROZEN protocol identity** (the C-PFM controller
+estimator and stochastic pairing depend on it; larger micro-batches only in
+Phase-1B, where the controller will be revised to accumulation-averaged FM
+loss and re-validated); perc_frac 0.5; milestones every 5k + resumable ckpt
+every CKPT_EVERY; eval on EMA weights.
 
 ## Registered arms
 | arm (code)   | meaning                                   | flags               |

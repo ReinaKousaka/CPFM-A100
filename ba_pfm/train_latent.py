@@ -101,6 +101,12 @@ def main(argv=None):
                    help="stage-0: restrict to first N samples (tiny-overfit gate)")
     args = p.parse_args(argv)
 
+    if args.arm == "pfm_trust" and os.environ.get("CPFM_UNBLOCK_TRUST") != "1":
+        raise SystemExit(
+            "pfm_trust is LAUNCH-BLOCKED (teacher/student label-dropout "
+            "mismatch, Amendment 7). Fix the conditioning first; set "
+            "CPFM_UNBLOCK_TRUST=1 only after that fix is registered.")
+
     torch.manual_seed(args.seed)
     name = args.arm + args.tag + f"-s{args.seed}"
     out = os.path.join(RUNS, name)
@@ -110,8 +116,29 @@ def main(argv=None):
         print(f"[train_latent] {final_path} exists — nothing to do")
         return
     os.makedirs(out, exist_ok=True)
-    with open(os.path.join(out, "args.json"), "w") as f:
-        json.dump(vars(args), f, indent=2)
+    args_path = os.path.join(out, "args.json")
+    # resume-identity guard (review 2026-08-13): resuming an existing run with
+    # different protocol-critical arguments would silently change the run's
+    # definition midstream. --steps may change (registered staged extensions);
+    # logging/ckpt cadence and device are operational, not identity.
+    _IDENTITY = ["arm", "lam_fm", "lam_perc", "drift_eps", "lam_lr", "lam_max",
+                 "dv_delta", "init", "batch", "accum", "perc_frac", "lr",
+                 "seed", "ema", "refresh_every", "probe_batch", "max_shards",
+                 "overfit_n"]
+    if os.path.exists(last_path) and os.path.exists(args_path):
+        with open(args_path) as f:
+            prev = json.load(f)
+        bad = {k: (prev.get(k), vars(args)[k]) for k in _IDENTITY
+               if k in prev and prev[k] != vars(args)[k]}
+        if bad:
+            raise SystemExit(f"[train_latent] resume-identity mismatch {bad} — "
+                             "refusing to resume with changed protocol args")
+        prev.update({"steps": args.steps})  # record extension, keep identity
+        with open(args_path, "w") as f:
+            json.dump(prev, f, indent=2)
+    else:
+        with open(args_path, "w") as f:
+            json.dump(vars(args), f, indent=2)
 
     ds = LatentDataset("train", max_shards=args.max_shards)
     if args.overfit_n:

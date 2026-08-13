@@ -23,6 +23,19 @@ SCALE = 0.18215
 LATENT_DIR = "data/latents"
 
 
+def _validate_memmaps(z_path, y_path, meta_path):
+    """A metadata file must never vouch for memmaps that are missing, truncated,
+    or shape-mismatched (review 2026-08-13)."""
+    with open(meta_path) as fh:
+        total = json.load(fh)["total"]
+    z = np.load(z_path, mmap_mode="r")
+    y = np.load(y_path, mmap_mode="r")
+    if z.shape != (total, 4, 32, 32) or y.shape != (total,):
+        raise RuntimeError(
+            f"memmap validation failed: z{z.shape} y{y.shape} vs meta total "
+            f"{total} — delete {meta_path} and reconvert")
+
+
 def convert_shards(split="train", max_shards=None, latent_dir=LATENT_DIR):
     files = sorted(glob.glob(os.path.join(latent_dir, f"{split}-*.parquet")))
     if max_shards:
@@ -34,6 +47,7 @@ def convert_shards(split="train", max_shards=None, latent_dir=LATENT_DIR):
     y_path = os.path.join(latent_dir, f"{tag}_y.npy")
     meta_path = os.path.join(latent_dir, f"{tag}_meta.json")
     if os.path.exists(meta_path):
+        _validate_memmaps(z_path, y_path, meta_path)
         return z_path, y_path, meta_path
 
     import pyarrow.parquet as pq

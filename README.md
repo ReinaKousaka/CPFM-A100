@@ -13,6 +13,7 @@ git clone git@github.com:ReinaKousaka/CPFM-A100.git && cd CPFM-A100
 
 # 2. receive the frozen init (1.0 GB). Nothing to do on this machine — from
 #    the 4090 box someone runs:  bash scripts/push_init.sh <user@this-a100-host>
+#    (push_init.sh lives in the private paper2 repo on the 4090 box, not here)
 #    which rsyncs the checkpoint into runs/latent256/fm_base-s0/ here and
 #    verifies its sha256 (8743fd1d...). Any other transfer works too, as long
 #    as the file lands at runs/latent256/fm_base-s0/ckpt_step200000.pt —
@@ -23,18 +24,25 @@ git clone git@github.com:ReinaKousaka/CPFM-A100.git && cd CPFM-A100
 #    network-dominated). Needs ~300 GB free disk and outbound HTTPS.
 bash scripts/bootstrap.sh
 
-# 4. pick batch geometry from the probe output (last lines of runs/bootstrap.log):
-#    use the largest micro-batch that ran; on A100-80GB expect BATCH=64 ACCUM=4.
+# 4. read the scaling probe output (last lines of runs/bootstrap.log) for
+#    headroom info. Phase-1A arms MUST keep the protocol geometry BATCH=16
+#    ACCUM=16 — the C-PFM controller estimator depends on micro-batch size, so
+#    changing geometry changes the method (reviewer, 2026-08-13). Larger
+#    micro-batches are for Phase-1B only.
 
 # 5. launch arms (one per GPU; set CUDA_VISIBLE_DEVICES per card). Examples:
-CUDA_VISIBLE_DEVICES=0 ARM=pfm_auto TAG=_25k EPS=0.15 SEED=1 BATCH=64 ACCUM=4 \
+# C-PFM seed-1 confirmation: EPS must be the SELECTED value (frozen after the
+# eps sensitivity run on the 4090 — do not launch before selection is frozen):
+CUDA_VISIBLE_DEVICES=0 ARM=pfm_auto TAG=_25k EPS=<selected-eps> SEED=1 \
   nohup bash scripts/run_arm.sh > /dev/null 2>&1 &
-CUDA_VISIBLE_DEVICES=1 ARM=bapfm TAG=_l0 LAMFM=0.0 BATCH=64 ACCUM=4 \
+CUDA_VISIBLE_DEVICES=1 ARM=bapfm TAG=_l0 LAMFM=0.0 STEPS=10000 \
   nohup bash scripts/run_arm.sh > /dev/null 2>&1 &
 
-# 6. per running arm, start its gate-eval watcher (same GPU is fine):
+# 6. per running arm, start its gate-eval watcher. Sharing the training GPU
+#    is OK at the mandatory 16x16 geometry on 80GB cards; otherwise use a
+#    separate GPU. Staged arms need LAST_MS (watcher exits at that milestone):
 CUDA_VISIBLE_DEVICES=0 RUN=pfm_auto_25k-s1 nohup bash scripts/watch_arm.sh > /dev/null 2>&1 &
-CUDA_VISIBLE_DEVICES=1 RUN=bapfm_l0-s0    nohup bash scripts/watch_arm.sh > /dev/null 2>&1 &
+CUDA_VISIBLE_DEVICES=1 RUN=bapfm_l0-s0 LAST_MS=010000 nohup bash scripts/watch_arm.sh > /dev/null 2>&1 &
 ```
 
 Progress: `tail runs/latent256/<run>/log.jsonl` (training) and

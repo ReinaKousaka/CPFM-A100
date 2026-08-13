@@ -20,11 +20,32 @@ _IMNET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 _IMNET_STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
 
+# registered weight identity for dinov2_vits14 (state-dict digest, sorted-name
+# order, fp32 bytes) — the frozen calibration is only valid for these weights
+def _state_digest(module):
+    import hashlib
+    h = hashlib.sha256()
+    for name, t in sorted(module.state_dict().items()):
+        h.update(name.encode())
+        h.update(t.detach().cpu().float().numpy().tobytes())
+    return h.hexdigest()
+
+
+DINO_EXPECTED_DIGEST = \
+    "190859844203f530e178165b42ed96c811144b0c1945d8b8e8306e68e468ab48"
+
+
 class DinoBlocks(nn.Module):
     def __init__(self, device="cuda"):
         super().__init__()
         self.net = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
         self.net.eval().requires_grad_(False).to(device)
+        got = _state_digest(self.net)
+        if DINO_EXPECTED_DIGEST != "REPLACED_AT_FREEZE" \
+                and got != DINO_EXPECTED_DIGEST:
+            raise RuntimeError(
+                f"DINOv2 weight digest mismatch: {got[:16]}... — the frozen "
+                "calibration is invalid for these weights (hub drift?)")
         self.mean = _IMNET_MEAN.to(device)
         self.std = _IMNET_STD.to(device)
 
