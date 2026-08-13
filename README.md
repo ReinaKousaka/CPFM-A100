@@ -7,9 +7,9 @@ machine (A100 target). Everything needed is here except two large artifacts
 ## Quick start on the A100 machine
 
 ```bash
-# 1. get the package (either clone the standalone repo/submodule, or copy it)
-git clone git@github.com:ReinaKousaka/paper2.git && cd paper2/cpfm
-#    -- or, once split into its own repo: git clone <cpfm-repo-url> && cd cpfm
+# 1. get the package — this repo only; the A100 machine never needs paper2
+git clone git@github.com:ReinaKousaka/CPFM-A100.git && cd CPFM-A100
+#    (read-only alternative without SSH keys: https://github.com/ReinaKousaka/CPFM-A100.git)
 
 # 2. place the frozen init (1.0 GB) — rsync from the 4090 box:
 mkdir -p runs/latent256/fm_base-s0
