@@ -1,0 +1,12 @@
+torch
+torchvision
+timm
+lpips
+clean-fid
+scipy<1.16  # clean-fid uses sqrtm(disp=), removed in scipy 1.16
+matplotlib
+tqdm
+numpy
+diffusers
+transformers
+pyarrow
