@@ -12,6 +12,7 @@ set -u
 cd "$(dirname "$0")/.."
 ARM=${ARM:?set ARM}; TAG=${TAG:?set TAG}; SEED=${SEED:-0}
 STEPS=${STEPS:-25000}; BATCH=${BATCH:-16}; ACCUM=${ACCUM:-16}
+CKPT_EVERY=${CKPT_EVERY:-5000}   # resumable-ckpt interval; use 500-1000 on preemptible slots
 EPS=${EPS:-}; LAMFM=${LAMFM:-}
 NAME="$ARM$TAG-s$SEED"
 LOG="runs/$NAME.log"
@@ -32,7 +33,7 @@ for ATTEMPT in 1 2 3 4 5; do
   echo "[$NAME $(date +%H:%M)] attempt $ATTEMPT" >> "$LOG"
   if .venv/bin/python -m ba_pfm.train_latent --arm "$ARM" --tag "$TAG" --init "$INIT" \
        --steps "$STEPS" --batch "$BATCH" --accum "$ACCUM" --perc_frac 0.5 \
-       --lr 1e-4 --seed "$SEED" --milestone_every 5000 --ckpt_every 5000 \
+       --lr 1e-4 --seed "$SEED" --milestone_every 5000 --ckpt_every "$CKPT_EVERY" \
        $EXTRA >> "$LOG" 2>&1; then
     echo "[$NAME $(date +%H:%M)] COMPLETED" >> "$LOG"; exit 0
   fi
