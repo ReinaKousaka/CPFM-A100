@@ -56,18 +56,8 @@ Do NOT ship `gen_*` folders (10k PNGs each) unless recall/precision needs
 recomputing elsewhere — `ba_pfm.eval_prdc` can compute it on-site instead:
 `.venv/bin/python -m ba_pfm.eval_prdc --run <run> --gen gen_ckpt_step025000_nfe4_cfg1.0`
 
-## Making this folder a git submodule of paper2
-
-```bash
-# one-time split (run on any machine with the paper2 clone + a new empty repo):
-cd paper2/cpfm
-git init && git add -A && git commit -m "cpfm standalone"
-git remote add origin git@github.com:ReinaKousaka/cpfm.git && git push -u origin main
-cd .. && git rm -r --cached cpfm && rm -rf cpfm
-git submodule add git@github.com:ReinaKousaka/cpfm.git cpfm
-git commit -m "cpfm as submodule"
-# fresh checkouts then need: git clone --recurse-submodules ...
-```
+This repo is a submodule of `paper2` (fresh paper2 checkouts:
+`git clone --recurse-submodules`).
 
 ## Layout
 
