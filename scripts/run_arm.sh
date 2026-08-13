@@ -5,14 +5,17 @@
 #   ARM=pfm_auto  TAG=_25k    EPS=0.15             bash scripts/run_arm.sh   # C-PFM
 #   ARM=bapfm     TAG=_l0     LAMFM=0.0            bash scripts/run_arm.sh   # balanced
 #   ARM=pfm_matched TAG=_10k  STEPS=10000          bash scripts/run_arm.sh
-#   SEED=1 ... for replications. BATCH/ACCUM from the bootstrap scaling probe
-#   (defaults below are the 24GB-safe geometry; on A100-80GB use BATCH=64 ACCUM=4).
+#   SEED=1 ... for replications. BATCH=16 ACCUM=16 is FROZEN protocol geometry
+#   for all Phase-1A arms (do not change; the probe informs Phase-1B only).
+#   Staged arms: STEPS=25000 STOP_AFTER=10000 pauses cleanly at 10k keeping the
+#   resumable checkpoint; relaunch with a higher STOP_AFTER (or none) extends.
 # flock-guarded, sha-verified init, resumable (ckpt_last), 5 retries.
 set -u
 cd "$(dirname "$0")/.."
 ARM=${ARM:?set ARM}; TAG=${TAG:?set TAG}; SEED=${SEED:-0}
 STEPS=${STEPS:-25000}; BATCH=${BATCH:-16}; ACCUM=${ACCUM:-16}
 CKPT_EVERY=${CKPT_EVERY:-5000}   # resumable-ckpt interval; use 500-1000 on preemptible slots
+STOP_AFTER=${STOP_AFTER:-0}      # staged pause step (0 = run to STEPS)
 EPS=${EPS:-}; LAMFM=${LAMFM:-}
 NAME="$ARM$TAG-s$SEED"
 LOG="runs/$NAME.log"
@@ -27,6 +30,7 @@ echo "8743fd1dddaf413d75e6a9cce96707b5b5b1a12b84a21716a4fd67ff9206ae02  $INIT" \
 EXTRA=""
 [ -n "$EPS" ] && EXTRA="$EXTRA --drift_eps $EPS"
 [ -n "$LAMFM" ] && EXTRA="$EXTRA --lam_fm $LAMFM"
+[ "$STOP_AFTER" != "0" ] && EXTRA="$EXTRA --stop_after $STOP_AFTER"
 
 for ATTEMPT in 1 2 3 4 5; do
   [ -f "runs/.$NAME.paused" ] && { echo "[$NAME] paused by gate decision" >> "$LOG"; exit 0; }

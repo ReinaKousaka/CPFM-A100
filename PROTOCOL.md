@@ -50,5 +50,6 @@ init 64.9. NOTE: these FIDs are internal (10k samples, val-decoded reference)
 — comparable across arms here, NOT to published numbers.
 
 ## Cost anchors
-4090 (bs16x16): 5.93 s/step -> 25k arm ~= 41 h + ~3 h evals. A100-80GB: run
-the bootstrap scaling probe and use the best geometry (expect bs64x4).
+4090 (bs16x16): 5.93 s/step -> 25k arm ~= 41 h + ~3 h evals. A100 runs KEEP
+bs16x16 (frozen geometry); expect similar-or-better s/step. The bootstrap
+probe's larger geometries are Phase-1B planning info only.

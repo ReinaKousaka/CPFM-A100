@@ -55,7 +55,8 @@ def main():
     p.add_argument("--device", default="cuda")
     args = p.parse_args()
 
-    net = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+    from .perceptual import DINO_REPO
+    net = torch.hub.load(DINO_REPO, "dinov2_vits14")
     net.eval().requires_grad_(False).to(args.device)
 
     gen_dir = os.path.join(RUNS, args.run, args.gen)

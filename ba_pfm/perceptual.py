@@ -20,6 +20,9 @@ _IMNET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 _IMNET_STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
 
+DINO_REPO = ("facebookresearch/dinov2:"
+             "7764ea0f912e53c92e82eb78a2a1631e92725fc8")  # pinned code revision
+
 # registered weight identity for dinov2_vits14 (state-dict digest, sorted-name
 # order, fp32 bytes) — the frozen calibration is only valid for these weights
 def _state_digest(module):
@@ -38,7 +41,7 @@ DINO_EXPECTED_DIGEST = \
 class DinoBlocks(nn.Module):
     def __init__(self, device="cuda"):
         super().__init__()
-        self.net = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+        self.net = torch.hub.load(DINO_REPO, "dinov2_vits14")
         self.net.eval().requires_grad_(False).to(device)
         got = _state_digest(self.net)
         if DINO_EXPECTED_DIGEST != "REPLACED_AT_FREEZE" \

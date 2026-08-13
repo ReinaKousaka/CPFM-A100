@@ -3,7 +3,7 @@
 #   RUN=pfm_auto_25k-s1 bash scripts/watch_arm.sh                # full 25k arm
 #   RUN=bapfm_l0-s0 LAST_MS=010000 bash scripts/watch_arm.sh    # staged arm
 # Few-step FID-10k (NFE 1/2/4/8, CFG 1.0) at each 5k milestone up to LAST_MS;
-# NFE-250 CFG {1.0,1.5} references at LAST_MS. Each eval retried twice; exits
+# NFE-250 CFG {1.0,1.5} references at LAST_MS. Each eval gets 3 attempts; exits
 # nonzero listing failures (never a silent "done"). Idempotent.
 # GPU guidance: sharing the training GPU is safe ONLY at the 16x16 protocol
 # geometry on an 80GB card; otherwise use a separate GPU or run after training.

@@ -20,7 +20,8 @@ class FrozenVAE(nn.Module):
                  use_checkpoint=True):
         super().__init__()
         from diffusers import AutoencoderKL
-        self.vae = AutoencoderKL.from_pretrained(model_id, revision=VAE_REVISION)
+        rev = VAE_REVISION if model_id == "stabilityai/sd-vae-ft-ema" else None
+        self.vae = AutoencoderKL.from_pretrained(model_id, revision=rev)
         self.vae.to(device).eval().requires_grad_(False)
         self.model_id = model_id
         if use_checkpoint:

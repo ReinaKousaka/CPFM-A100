@@ -82,6 +82,10 @@ def main(argv=None):
     p.add_argument("--init", default=None,
                    help="checkpoint to fine-tune from (omit to train from scratch)")
     p.add_argument("--steps", type=int, default=100000)
+    p.add_argument("--stop_after", type=int, default=0,
+                   help="staged runs: pause cleanly at this step (multiple of "
+                        "ckpt_every), KEEPING ckpt_last for later extension; "
+                        "0 = run to --steps and finalize")
     p.add_argument("--batch", type=int, default=32, help="micro-batch per step")
     p.add_argument("--accum", type=int, default=1, help="grad accumulation")
     p.add_argument("--perc_frac", type=float, default=1.0,
@@ -125,7 +129,11 @@ def main(argv=None):
                  "dv_delta", "init", "batch", "accum", "perc_frac", "lr",
                  "seed", "ema", "refresh_every", "probe_batch", "max_shards",
                  "overfit_n"]
-    if os.path.exists(last_path) and os.path.exists(args_path):
+    if os.path.exists(last_path):
+        if not os.path.exists(args_path):   # fail CLOSED: unknown provenance
+            raise SystemExit(f"[train_latent] {last_path} exists but "
+                             f"{args_path} is missing — cannot verify resume "
+                             "identity; restore args.json or move the run dir")
         with open(args_path) as f:
             prev = json.load(f)
         bad = {k: (prev.get(k), vars(args)[k]) for k in _IDENTITY
@@ -133,7 +141,7 @@ def main(argv=None):
         if bad:
             raise SystemExit(f"[train_latent] resume-identity mismatch {bad} — "
                              "refusing to resume with changed protocol args")
-        prev.update({"steps": args.steps})  # record extension, keep identity
+        prev.update({"steps": args.steps, "stop_after": args.stop_after})
         with open(args_path, "w") as f:
             json.dump(prev, f, indent=2)
     else:
@@ -233,6 +241,15 @@ def main(argv=None):
         fm_ema = fm0
         print(f"[train_latent] pfm_auto fm0={fm0:.4f} budget=+{args.drift_eps:.0%} "
               f"lam_lr={args.lam_lr}")
+
+    if args.stop_after:
+        if args.stop_after % args.ckpt_every != 0 or args.stop_after >= args.steps:
+            raise SystemExit("--stop_after must be a multiple of --ckpt_every "
+                             "and < --steps")
+        if args.stop_after < start_step:
+            print(f"[train_latent] already at step {start_step - 1} >= "
+                  f"stop_after {args.stop_after} — nothing to do")
+            return
 
     n_par = sum(q.numel() for q in model.parameters()) / 1e6
     print(f"[train_latent] arm={args.arm} lam_fm={args.lam_fm} steps={args.steps} "
@@ -404,6 +421,15 @@ def main(argv=None):
         if args.milestone_every and step % args.milestone_every == 0:
             torch.save({"model": model.state_dict(), "ema": ema.shadow, "step": step},
                        os.path.join(out, f"ckpt_step{step:06d}.pt"))
+
+        if args.stop_after and step == args.stop_after:
+            # staged pause: ckpt_last (full state) was just written above —
+            # ckpt_final is NOT created, so a later launch with a higher
+            # --stop_after (or none) resumes and extends this run.
+            log_f.close()
+            print(f"[train_latent] paused at step {step} (--stop_after); "
+                  f"ckpt_last retained for extension")
+            return
 
     torch.save({"model": model.state_dict(), "ema": ema.shadow, "args": vars(args)},
                final_path)
