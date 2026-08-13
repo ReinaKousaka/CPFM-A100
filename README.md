@@ -11,11 +11,12 @@ machine (A100 target). Everything needed is here except two large artifacts
 git clone git@github.com:ReinaKousaka/CPFM-A100.git && cd CPFM-A100
 #    (read-only alternative without SSH keys: https://github.com/ReinaKousaka/CPFM-A100.git)
 
-# 2. place the frozen init (1.0 GB) — rsync from the 4090 box:
-mkdir -p runs/latent256/fm_base-s0
-rsync -avP <4090-host>:/workspace/paper2/runs/latent256/fm_base-s0/ckpt_step200000.pt \
-      runs/latent256/fm_base-s0/
-#    bootstrap verifies sha256 8743fd1d... and refuses to run on mismatch.
+# 2. receive the frozen init (1.0 GB). Nothing to do on this machine — from
+#    the 4090 box someone runs:  bash scripts/push_init.sh <user@this-a100-host>
+#    which rsyncs the checkpoint into runs/latent256/fm_base-s0/ here and
+#    verifies its sha256 (8743fd1d...). Any other transfer works too, as long
+#    as the file lands at runs/latent256/fm_base-s0/ckpt_step200000.pt —
+#    bootstrap re-verifies the sha and refuses to run on mismatch.
 
 # 3. bootstrap: venv, deps, calibration install, 25 GB data fetch + conversion,
 #    FID reference, regression test, micro-batch scaling probe (~1-3 h,
