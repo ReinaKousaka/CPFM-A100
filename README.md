@@ -33,7 +33,7 @@ bash scripts/bootstrap.sh
 # 5. launch arms (one per GPU; set CUDA_VISIBLE_DEVICES per card). Examples:
 # C-PFM seed-1 confirmation: EPS must be the SELECTED value (frozen after the
 # eps sensitivity run on the 4090 — do not launch before selection is frozen):
-CUDA_VISIBLE_DEVICES=0 ARM=pfm_auto TAG=_25k EPS=<selected-eps> SEED=1 \
+CUDA_VISIBLE_DEVICES=0 ARM=pfm_auto TAG=_25k EPS=0.15 SEED=1 \
   nohup bash scripts/run_arm.sh > /dev/null 2>&1 &
 CUDA_VISIBLE_DEVICES=1 ARM=bapfm TAG=_l0 LAMFM=0.0 STOP_AFTER=10000 \
   nohup bash scripts/run_arm.sh > /dev/null 2>&1 &

@@ -23,7 +23,7 @@ every CKPT_EVERY; eval on EMA weights.
 |--------------|-------------------------------------------|---------------------|
 | fm           | continued-FM control                      | —                   |
 | pfm_fixed    | plain PFM baseline (equal weights, no FM) | —                   |
-| pfm_auto     | **C-PFM (method)** dual-ascent lambda     | EPS=0.15 (or 0.10)  |
+| pfm_auto     | **C-PFM (method)** dual-ascent lambda     | EPS=0.15 (FROZEN)    |
 | bapfm        | gradient-balanced + static anchor         | LAMFM=0.0 (balanced)|
 | pfm_matched  | input-grad-matched control (theta probe)  | STEPS=10000         |
 | pfm_trust    | velocity trust region — **LAUNCH BLOCKED**| (label-dropout bug) |
