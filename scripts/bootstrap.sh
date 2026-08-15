@@ -10,7 +10,15 @@ LOG=runs/bootstrap.log
 mkdir -p runs/latent256 data/latents
 echo "[boot $(date +%H:%M)] start" | tee -a "$LOG"
 
-# 0. frozen init must be byte-identical to the registered checkpoint
+# 0. reassemble the frozen init from the in-repo chunks if not already present
+CKPT=runs/latent256/fm_base-s0/ckpt_step200000.pt
+if [ ! -f "$CKPT" ] && ls init_ckpt/ckpt_step200000.pt.part-* > /dev/null 2>&1; then
+  echo "[boot $(date +%H:%M)] reassembling init from init_ckpt/ chunks" | tee -a "$LOG"
+  mkdir -p runs/latent256/fm_base-s0
+  cat init_ckpt/ckpt_step200000.pt.part-* > "$CKPT"
+fi
+
+# frozen init must be byte-identical to the registered checkpoint
 echo "8743fd1dddaf413d75e6a9cce96707b5b5b1a12b84a21716a4fd67ff9206ae02  runs/latent256/fm_base-s0/ckpt_step200000.pt" \
   | sha256sum -c - | tee -a "$LOG"
 
